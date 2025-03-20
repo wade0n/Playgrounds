@@ -177,12 +177,16 @@ public protocol BinaryTreeProtocol {
     associatedtype Value: Comparable
     
     var root: BTNode<Value>? { get set }
+    var depth: Int { get }
+    
     
     func insert(_ value: Value) -> BTNode<Value>?
     func remove(_ value: Value) -> BTNode<Value>?
     func find(_ value: Value) -> BTNode<Value>?
     func findMin(node: BTNode<Value>?) -> BTNode<Value>?
     func findMax(node: BTNode<Value>?) -> BTNode<Value>?
+
+    init(_ array: [Value])
     
     
     func printTree()
@@ -192,6 +196,18 @@ final class BinaryTree<T: Comparable>: BinaryTreeProtocol {
     typealias Value = T
     
     var root: BTNode<Value>?
+    
+    var depth: Int { self.findDepth() }
+    
+    init(_ array: [T] = []) {
+        for element in array {
+            insert(element)
+        }
+    }
+    
+    init() {
+        
+    }
     
     func insert(_ value: Value) -> BTNode<Value>? {
       guard let root = root else {
@@ -225,41 +241,39 @@ final class BinaryTree<T: Comparable>: BinaryTreeProtocol {
     }
     
     func remove(_ value: Value) -> BTNode<Value>?  {
-        guard let root = root else {
-            self.root = BTNode(value)
-            return self.root
+          guard let root = root else {
+            return nil
           }
           
           var currentNode: BTNode<Value>? = root
-          var previousNode: BTNode<Value> = root
+          var previousNode: BTNode<Value>? = nil
           while (currentNode != nil) {
               if value < currentNode!.value {
-                  previousNode = currentNode!
-                  currentNode = currentNode!.left
+                  previousNode = currentNode
+                  currentNode = currentNode?.left
               } else if value > currentNode!.value {
-                  previousNode = currentNode!
-                  currentNode = currentNode!.right
+                  previousNode = currentNode
+                  currentNode = currentNode?.right
               } else {
                   deleteNode(currentNode!, previousNode: &previousNode)
+                  currentNode = nil
               }
           }
           
         return nil
     }
     
+    /// O(log2(N))
     func find(_ value: Value) -> BTNode<Value>? {
         guard let root = root else {
             return nil
           }
           
           var currentNode: BTNode<Value>? = root
-          var previousNode: BTNode<Value> = root
           while (currentNode != nil) {
               if value < currentNode!.value {
-                  previousNode = currentNode!
                   currentNode = currentNode!.left
               } else if value > currentNode!.value {
-                  previousNode = currentNode!
                   currentNode = currentNode!.right
               } else {
                   return currentNode
@@ -269,6 +283,7 @@ final class BinaryTree<T: Comparable>: BinaryTreeProtocol {
           return nil
     }
     
+    /// O(log2(N))
     func findMin(node: BTNode<Value>?) -> BTNode<Value>? {
         var node = node
         
@@ -278,6 +293,8 @@ final class BinaryTree<T: Comparable>: BinaryTreeProtocol {
         
         return node
     }
+    
+    /// O(log2(N))
     func findMax(node: BTNode<Value>?) -> BTNode<Value>? {
         var node = node
         while node?.right != nil{
@@ -289,24 +306,30 @@ final class BinaryTree<T: Comparable>: BinaryTreeProtocol {
     
     func printTree() {
         var nodes = [root]
+        let depth = findDepth()
         
+        var currentDepth: Int = 1
+        var width: Int = Int(pow(Double(2), Double(depth))) - 1
         while !nodes.isEmpty {
             var line: String = ""
             for counter in 0..<nodes.count {
                 line += nodes[counter]?.value != nil ? "\(nodes[counter]!.value)" : "*"
                 line += (counter + 1 < nodes.count ) ? " - " : ""
             }
+            line = String(repeating: " ", count: width - line.count/2) + line
             line += "\n"
             print(line)
             let nextLevelNodes: [BTNode<Value>?] = nodes.flatMap { [$0?.left, $0?.right] }
             nodes = nextLevelNodes.contains(where: { $0 != nil }) ? nextLevelNodes : []
+            currentDepth += 1
         }
     }
     
     //MARK: - Private methods
-    private func deleteNode(_ node: BTNode<Value>, previousNode: inout BTNode<Value>) {
+    private func deleteNode(_ node: BTNode<Value>, previousNode: inout BTNode<Value>?) {
         var newNode: BTNode<Value>?
         switch (node.left, node.right) {
+        
         case (nil, nil):
             newNode = nil
         case (nil, let foundNode), (let foundNode, nil):
@@ -316,32 +339,99 @@ final class BinaryTree<T: Comparable>: BinaryTreeProtocol {
             newNode = node
             newNode?.value = minRight?.value ?? node.value
             
-            deleteNode(minRight!, previousNode: &newNode!)
+            deleteNode(minRight!, previousNode: &newNode)
         }
         
+        guard let previousNode = previousNode else {
+                return
+        }
         if node.value < previousNode.value {
             previousNode.left = newNode
         } else {
             previousNode.right = newNode
         }
     }
+    
+    private func findDepth() -> Int {
+        var maxDepth: Int = 0
+        
+        guard let root else {
+            return maxDepth
+        }
+        
+        var nodes =  [root]
+        
+        while !nodes.isEmpty {
+            maxDepth += 1
+            var nextNodes = [BTNode<Value>]()
+            for node in nodes {
+                if let leftNode = node.left {
+                    nextNodes.append(leftNode)
+                }
+                if let rightNode = node.right {
+                    nextNodes.append(rightNode)
+                }
+            }
+            
+            nodes = nextNodes
+        }
+        
+        return maxDepth
+    }
 }
 
-let tree = BinaryTree<Int>.init()
+let tree = BinaryTree<Int>.init([7, 3, 2, 1, 9, 5, 4, 6, 8, 9, 11, 14, 15])
 
-Dictionary
 
-tree.insert(1)
-tree.insert(2)
-tree.insert(3)
-tree.insert(8)
-tree.insert(5)
-tree.insert(6)
-tree.insert(-1)
-tree.insert(-4)
-tree.insert(11)
+
 tree.printTree()
-tree.remove(5)
-print("-----------------------------------------------")
-tree.printTree()
+print("----------------------")
+
+//print(tree.depth)
+
+
+
+func countDepth(for arr: [Int]) -> Int {
+    guard let firstElement = arr.first else {
+        return 0
+    }
+
+    let root: BTNode<Int> = BTNode(firstElement)
+    var maxDepth = 0
+   
+    for element in arr {
+        var currentNode: BTNode<Int>? = root
+        var previousNode: BTNode<Int> = root
+        var currentDepth = 1
+        
+        while currentNode != nil {
+            if element > currentNode!.value {
+                previousNode = currentNode!
+                currentNode = previousNode.right
+                currentDepth += 1
+            } else if element < currentNode!.value {
+                previousNode = currentNode!
+                currentNode = previousNode.left
+                currentDepth += 1
+            } else {
+                currentNode = nil
+            }
+        }
+
+        let node = BTNode(element)
+        
+        if element < previousNode.value {
+            previousNode.left = node
+        } else if element > previousNode.value {
+            previousNode.right = node
+        }
+        
+        print(element, currentDepth)
+        maxDepth = max(maxDepth, currentDepth)
+    }
+
+    return maxDepth
+}
+
+
 

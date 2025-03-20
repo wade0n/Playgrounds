@@ -1,23 +1,23 @@
 import UIKit
 
 
-enum Optional<T: Equatable>: Equatable {
+enum Optional<T> {
     case some(T)
     case none
+}
 
+extension Optional: Equatable where T: Equatable {
     func isEqual(lhs: Optional<T>, rhs: Optional<T>) -> Bool {
     switch (lhs, rhs){
       case (.some,.none),(.none, .some):
         return false
       case let (.some(lValue), .some(rValue)):
-        return lValue == rValue
+        return true
       default:
         return true
     }
   }
-
 }
-
 
 class SomeClass: Equatable {
     static func == (lhs: SomeClass, rhs: SomeClass) -> Bool {
